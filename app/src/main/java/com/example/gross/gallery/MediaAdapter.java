@@ -7,18 +7,24 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
+
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
 
     private Cursor mediaCursor;
     private final Activity activity;
+    public static List<Uri> uriList = new ArrayList<>();
 
 
     public MediaAdapter(Activity activity) {
@@ -30,13 +36,14 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_media, parent, false);
+        getUriListFromMediaStore();
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
 
-        Picasso.with(activity).load(getUriFromMediaStore(position)).resize(240, 240).into(holder.mediaImageView);
+        Picasso.with(activity).load(uriList.get(position)).resize(240, 240).into(holder.mediaImageView);
 
         holder.mediaImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -86,12 +93,15 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         }
     }
 
-    private Uri getUriFromMediaStore(int position){
+    private void getUriListFromMediaStore(){
         int dataIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+        mediaCursor.moveToPosition(0);
+        while (mediaCursor.moveToNext()){
+            String dataString = mediaCursor.getString(dataIndex);
+            Uri uri = Uri.parse("file://" + dataString);
+            uriList.add(uri);
+        }
 
-        mediaCursor.moveToPosition(position);
-        String dataString = mediaCursor.getString(dataIndex);
-        return  Uri.parse("file://" + dataString);
     }
 
 }
