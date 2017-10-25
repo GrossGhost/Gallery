@@ -7,27 +7,25 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
+class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
 
     private Cursor mediaCursor;
     private final Activity activity;
-    public static List<Uri> uriList = new ArrayList<>();
+    static List<Uri> uriList = new ArrayList<>();
 
 
-    public MediaAdapter(Activity activity) {
+    MediaAdapter(Activity activity) {
         this.activity = activity;
 
     }
@@ -43,7 +41,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
 
-        Picasso.with(activity).load(uriList.get(position)).resize(240, 240).into(holder.mediaImageView);
+        Glide.with(activity).load(uriList.get(position)).override(200,200).into(holder.mediaImageView);
 
         holder.mediaImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -62,11 +60,11 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         return (mediaCursor == null) ? 0 : mediaCursor.getCount();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder{
+    static class ViewHolder extends RecyclerView.ViewHolder{
 
         ImageView mediaImageView;
 
-        public ViewHolder(View itemView) {
+        ViewHolder(View itemView) {
             super(itemView);
 
             mediaImageView = itemView.findViewById(R.id.mediaImageView);
@@ -86,7 +84,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         return oldCursor;
     }
 
-    public void changeCursor(Cursor cursor){
+    void changeCursor(Cursor cursor){
         Cursor oldCursor = swapCursor(cursor);
         if (oldCursor != null){
             oldCursor.close();

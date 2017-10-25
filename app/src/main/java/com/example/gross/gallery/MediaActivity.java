@@ -2,6 +2,7 @@ package com.example.gross.gallery;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -15,6 +16,9 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.Toast;
+
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 public class MediaActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -31,12 +35,22 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         setContentView(R.layout.activity_main);
 
         thumbRecyclerView = (RecyclerView) findViewById(R.id.thumbRecyclerView);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2);
+        thumbRecyclerView.setHasFixedSize(true);
+        GridLayoutManager gridLayoutManager;
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            gridLayoutManager = new GridLayoutManager(this, 2);
+        } else {
+            gridLayoutManager = new GridLayoutManager(this, 3);
+        }
+
         thumbRecyclerView.setLayoutManager(gridLayoutManager);
         mediaAdapter = new MediaAdapter(this);
         thumbRecyclerView.setAdapter(mediaAdapter);
 
         checkReadExternalStoragePermission();
+
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this).build();
+        ImageLoader.getInstance().init(config);
     }
 
     @Override

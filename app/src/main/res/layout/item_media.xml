@@ -4,15 +4,16 @@
     android:id="@+id/media_card_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    card_view:cardCornerRadius="8dp"
-    card_view:cardUseCompatPadding="true">
+    card_view:cardUseCompatPadding="true"
+    card_view:cardCornerRadius="10dp" >
 
-    <ImageView
-        android:id="@+id/mediaImageView"
+    <com.makeramen.roundedimageview.RoundedImageView
         android:layout_width="match_parent"
         android:layout_height="175dp"
-        android:contentDescription="@string/content"
-        android:scaleType="centerCrop" />
+        android:id="@+id/mediaImageView"
+        android:scaleType="centerCrop"
+        android:layout_alignParentTop="true"
+        card_view:riv_corner_radius="10dp" />
 
 
 </android.support.v7.widget.CardView>

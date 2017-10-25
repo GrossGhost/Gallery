@@ -1,32 +1,27 @@
 package com.example.gross.gallery;
 
-
-import android.app.Fragment;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.annotation.Nullable;
-import android.util.Log;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import java.io.IOException;
+import com.nostra13.universalimageloader.core.ImageLoader;
+
 
 public class DetailFragment extends Fragment {
 
-    private static final String BUNDLE_CONTENT = "bundle_content";
-    private static final double MAX_SIZE = 4000.0;
     private ImageView imageView;
-    private Bitmap imageBitmap;
+    private int currentPosition;
+    private Uri imageUri;
 
-    public static DetailFragment newInstance(final int content) {
-        final DetailFragment fragment = new DetailFragment();
-        final Bundle arguments = new Bundle();
-        arguments.putInt(BUNDLE_CONTENT, content);
+    static DetailFragment newInstance(final int content) {
+        DetailFragment fragment = new DetailFragment();
+        Bundle arguments = new Bundle();
+        arguments.putInt("currentPosition", content);
         fragment.setArguments(arguments);
 
         return fragment;
@@ -35,20 +30,10 @@ public class DetailFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null && getArguments().containsKey(BUNDLE_CONTENT)) {
 
-            Uri imageUri = MediaAdapter.uriList.get(getArguments().getInt(BUNDLE_CONTENT));
-            try {
+        currentPosition = getArguments().getInt("currentPosition");
+        imageUri = MediaAdapter.uriList.get(currentPosition);
 
-                imageBitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            throw new IllegalArgumentException("Must be created through newInstance(...)");
-        }
     }
 
     @Nullable
@@ -57,49 +42,10 @@ public class DetailFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_detail, null);
         imageView = view.findViewById(R.id.imageViewDetail);
 
-        prepareBitmapImage();
-
-        imageView.setImageBitmap(imageBitmap);
+        ImageLoader imageLoader = ImageLoader.getInstance();
+        imageLoader.displayImage(imageUri.toString(),imageView);
 
         return view;
-
-    }
-
-    private void prepareBitmapImage() {
-
-        if (imageBitmap.getWidth() > MAX_SIZE){
-            double k = imageBitmap.getWidth()/MAX_SIZE;
-            imageBitmap = getResizedBitmap(imageBitmap,
-                    (int) (imageBitmap.getWidth()/k),
-                    (int) (imageBitmap.getHeight()/k) );
-        }
-
-        if (imageBitmap.getHeight() > MAX_SIZE){
-            double k = imageBitmap.getHeight()/MAX_SIZE;
-            Log.d("prepareBitmap",  k + "  ");
-            imageBitmap = getResizedBitmap(imageBitmap,
-                    (int) (imageBitmap.getWidth()/k),
-                    (int) (imageBitmap.getHeight()/k) );
-            Log.d("prepareBitmap", (int) (imageBitmap.getHeight()/k) + "  " + imageBitmap.getHeight()/k );
-        }
-        Log.d("prepareBitmap", imageBitmap.getWidth() + "  " + imageBitmap.getHeight() );
-    }
-
-    public Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
-        int width = bm.getWidth();
-        int height = bm.getHeight();
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        // CREATE A MATRIX FOR THE MANIPULATION
-        Matrix matrix = new Matrix();
-        // RESIZE THE BIT MAP
-        matrix.postScale(scaleWidth, scaleHeight);
-
-        // "RECREATE" THE NEW BITMAP
-        Bitmap resizedBitmap = Bitmap.createBitmap(
-                bm, 0, 0, width, height, matrix, false);
-        //bm.recycle();
-        return resizedBitmap;
     }
 
 }
