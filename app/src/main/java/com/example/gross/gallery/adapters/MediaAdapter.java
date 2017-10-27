@@ -1,4 +1,4 @@
-package com.example.gross.gallery;
+package com.example.gross.gallery.adapters;
 
 
 import android.app.Activity;
@@ -13,19 +13,21 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.example.gross.gallery.R;
+import com.example.gross.gallery.ui.DetailActivity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
+public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
 
     private Cursor mediaCursor;
     private final Activity activity;
-    static List<Uri> uriList = new ArrayList<>();
+    public static List<Uri> uriList = new ArrayList<>();
 
 
-    MediaAdapter(Activity activity) {
+    public MediaAdapter(Activity activity) {
         this.activity = activity;
 
     }
@@ -84,7 +86,7 @@ class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
         return oldCursor;
     }
 
-    void changeCursor(Cursor cursor){
+    public void changeCursor(Cursor cursor){
         Cursor oldCursor = swapCursor(cursor);
         if (oldCursor != null){
             oldCursor.close();

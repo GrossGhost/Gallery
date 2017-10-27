@@ -1,6 +1,7 @@
-package com.example.gross.gallery;
+package com.example.gross.gallery.ui;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -17,6 +18,9 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.Toast;
 
+
+import com.example.gross.gallery.R;
+import com.example.gross.gallery.adapters.MediaAdapter;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
@@ -47,11 +51,13 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         mediaAdapter = new MediaAdapter(this);
         thumbRecyclerView.setAdapter(mediaAdapter);
 
+
         checkReadExternalStoragePermission();
 
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this).build();
         ImageLoader.getInstance().init(config);
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
