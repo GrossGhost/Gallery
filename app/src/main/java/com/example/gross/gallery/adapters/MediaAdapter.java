@@ -12,19 +12,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.bumptech.glide.Glide;
 import com.example.gross.gallery.R;
+import com.example.gross.gallery.model.ImageDataObject;
 import com.example.gross.gallery.ui.DetailActivity;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.gross.gallery.Consts.CURRENT_POSITION;
+import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
 
 
 public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
 
     private Cursor mediaCursor;
     private final Activity activity;
-    public static List<Uri> uriList = new ArrayList<>();
+    public static List<ImageDataObject> imageDataList = new ArrayList<>();
 
 
     public MediaAdapter(Activity activity) {
@@ -41,17 +45,21 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, final int position) {
-
-        Glide.with(activity).load(uriList.get(position)).override(200,200).into(holder.mediaImageView);
+    public void onBindViewHolder(ViewHolder holder, int position) {
+        final int pos = position;
+        Picasso.with(activity)
+                .load(imageDataList.get(position).getUri())
+                .resize(200,200)
+                .into(holder.mediaImageView);
 
         holder.mediaImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent startDetailActivityIntent = new Intent(activity, DetailActivity.class);
-                startDetailActivityIntent.putExtra("position", position);
+                startDetailActivityIntent.putExtra(CURRENT_POSITION, pos);
 
-                activity.startActivity(startDetailActivityIntent);
+                activity.startActivityForResult(startDetailActivityIntent, REQUEST_CODE_CURRENT_POSITION);
+                activity.overridePendingTransition(R.anim.right_in, R.anim.left_out);
             }
         });
     }
@@ -94,12 +102,21 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     }
 
     private void getUriListFromMediaStore(){
+        int titleIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.TITLE);
+        int widthIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.WIDTH);
+        int heightIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.HEIGHT);
+        int thumbIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.MINI_THUMB_MAGIC);
+
         int dataIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+
         mediaCursor.moveToPosition(0);
         while (mediaCursor.moveToNext()){
-            String dataString = mediaCursor.getString(dataIndex);
-            Uri uri = Uri.parse("file://" + dataString);
-            uriList.add(uri);
+            String title = mediaCursor.getString(titleIndex);
+            int width = Integer.parseInt(mediaCursor.getString(widthIndex));
+            int height = Integer.parseInt(mediaCursor.getString(heightIndex));
+            Uri thumb = Uri.parse("file://" + mediaCursor.getString(thumbIndex));
+            Uri uri = Uri.parse("file://" + mediaCursor.getString(dataIndex));
+            imageDataList.add(new ImageDataObject(title, width, height,thumb, uri));
         }
 
     }

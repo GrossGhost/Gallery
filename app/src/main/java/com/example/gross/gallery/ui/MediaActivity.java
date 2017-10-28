@@ -21,14 +21,13 @@ import android.widget.Toast;
 
 import com.example.gross.gallery.R;
 import com.example.gross.gallery.adapters.MediaAdapter;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
+import static com.example.gross.gallery.Consts.CURRENT_POSITION;
+import static com.example.gross.gallery.Consts.MEDIA_LOADER_ID;
+import static com.example.gross.gallery.Consts.READ_EXTERNAL_STORAGE_RESULT;
+import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
 
 public class MediaActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
-
-    private String readExternalStoragePermission = Manifest.permission.READ_EXTERNAL_STORAGE;
-    private final static int READ_EXTERNAL_STORAGE_RESULT = 0;
-    private final static int MEDIA_LOADER_ID = 0;
 
     private RecyclerView thumbRecyclerView;
     private MediaAdapter mediaAdapter;
@@ -54,10 +53,18 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
         checkReadExternalStoragePermission();
 
-        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this).build();
-        ImageLoader.getInstance().init(config);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case REQUEST_CODE_CURRENT_POSITION:
+                    thumbRecyclerView.scrollToPosition(data.getIntExtra(CURRENT_POSITION, 0));
+            }
+        }
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -75,6 +82,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
     private void checkReadExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String readExternalStoragePermission = Manifest.permission.READ_EXTERNAL_STORAGE;
             if (ContextCompat.checkSelfPermission(this, readExternalStoragePermission) ==
                     PackageManager.PERMISSION_GRANTED) {
                 //start cursor loader
@@ -95,7 +103,12 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projection = { MediaStore.Images.ImageColumns.DATA };
+        String[] projection = {
+                MediaStore.Images.ImageColumns.TITLE,
+                MediaStore.Images.ImageColumns.WIDTH,
+                MediaStore.Images.ImageColumns.HEIGHT,
+                MediaStore.Images.ImageColumns.MINI_THUMB_MAGIC,
+                MediaStore.Images.ImageColumns.DATA };
         String selection = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
         return new CursorLoader(this, MediaStore.Files.getContentUri("external"),

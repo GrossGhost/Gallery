@@ -11,6 +11,8 @@ import com.example.gross.gallery.R;
 import com.example.gross.gallery.ZoomOutPageTransformer;
 import com.example.gross.gallery.adapters.SwipeAdapter;
 
+import static com.example.gross.gallery.Consts.CURRENT_POSITION;
+
 public class DetailActivity extends AppCompatActivity {
 
     private ViewPager viewPager;
@@ -21,7 +23,7 @@ public class DetailActivity extends AppCompatActivity {
 
         viewPager = (ViewPager) findViewById(R.id.viewPagerDetail);
 
-        int itemPosition = getIntent().getIntExtra("position", 0);
+        int itemPosition = getIntent().getIntExtra(CURRENT_POSITION, 0);
 
         SwipeAdapter swipeAdapter = new SwipeAdapter(getSupportFragmentManager());
 
@@ -33,11 +35,10 @@ public class DetailActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        //Intent intent = new Intent();
-        //intent.putExtra("position", viewPager.getCurrentItem());
-
+    public void finish() {
+        Intent intent = new Intent();
+        intent.putExtra(CURRENT_POSITION, viewPager.getCurrentItem());
+        setResult(RESULT_OK, intent);
+        super.finish();
     }
-
 }

@@ -8,11 +8,11 @@
     card_view:cardCornerRadius="10dp" >
 
     <com.makeramen.roundedimageview.RoundedImageView
+        android:id="@+id/mediaImageView"
         android:layout_width="match_parent"
         android:layout_height="175dp"
-        android:id="@+id/mediaImageView"
-        android:scaleType="centerCrop"
         android:layout_alignParentTop="true"
+        android:scaleType="centerCrop"
         card_view:riv_corner_radius="10dp" />
 
 

@@ -25,6 +25,6 @@ public class SwipeAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getCount() {
-        return MediaAdapter.uriList.size();
+        return MediaAdapter.imageDataList.size();
     }
 }
