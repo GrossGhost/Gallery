@@ -19,12 +19,12 @@ public class SwipeAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public Fragment getItem(int position) {
-
         return DetailFragment.newInstance(position);
     }
 
     @Override
     public int getCount() {
+
         return MediaAdapter.imageDataList.size();
     }
 }

@@ -40,5 +40,6 @@ public class DetailActivity extends AppCompatActivity {
         intent.putExtra(CURRENT_POSITION, viewPager.getCurrentItem());
         setResult(RESULT_OK, intent);
         super.finish();
+        overridePendingTransition(R.anim.left_in, R.anim.right_out);
     }
 }

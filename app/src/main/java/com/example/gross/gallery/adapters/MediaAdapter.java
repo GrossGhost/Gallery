@@ -49,7 +49,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         final int pos = position;
         Picasso.with(activity)
                 .load(imageDataList.get(position).getUri())
-                .resize(200,200)
+                .resize(200, 200)
                 .into(holder.mediaImageView);
 
         holder.mediaImageView.setOnClickListener(new View.OnClickListener() {
