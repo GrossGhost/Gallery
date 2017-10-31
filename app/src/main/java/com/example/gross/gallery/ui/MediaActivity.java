@@ -7,11 +7,13 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
+import android.support.v4.content.FileProvider;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,6 +29,14 @@ import com.example.gross.gallery.R;
 import com.example.gross.gallery.adapters.MediaAdapter;
 import com.example.gross.gallery.model.ImageData;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import static android.os.Environment.getExternalStoragePublicDirectory;
+import static com.example.gross.gallery.Consts.ACTIVITY_START_CAMERA_APP;
+import static com.example.gross.gallery.Consts.CAMERA_PERMISSION_RESULT;
 import static com.example.gross.gallery.Consts.CURRENT_POSITION;
 import static com.example.gross.gallery.Consts.MEDIA_LOADER_ID;
 import static com.example.gross.gallery.Consts.READ_EXTERNAL_STORAGE_RESULT;
@@ -37,6 +47,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     private RecyclerView thumbRecyclerView;
     private MediaAdapter mediaAdapter;
     private Cursor mediaCursor;
+    private File photoFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +92,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menuCamera){
             Toast.makeText(getApplicationContext(), "Camera", Toast.LENGTH_SHORT).show();
+            checkCameraPermission();
         }
 
         return super.onOptionsItemSelected(item);
@@ -93,6 +105,15 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
             switch (requestCode) {
                 case REQUEST_CODE_CURRENT_POSITION:
                     thumbRecyclerView.scrollToPosition(data.getIntExtra(CURRENT_POSITION, 0));
+                    break;
+                case ACTIVITY_START_CAMERA_APP :
+                    //add photo to the Media Provider's database
+                    Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    Uri contentUri = Uri.fromFile(photoFile);
+                    mediaScanIntent.setData(contentUri);
+                    this.sendBroadcast(mediaScanIntent);
+                    getSupportLoaderManager().restartLoader(MEDIA_LOADER_ID, null, this);
+                    break;
             }
         }
     }
@@ -104,27 +125,75 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // call cursor adapter
                     getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
-
+                }
+                break;
+            case CAMERA_PERMISSION_RESULT:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                    takePhoto();
                 }
                 break;
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+    private void takePhoto() {
+        Intent callCameraApplicationIntent = new Intent();
+        callCameraApplicationIntent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
+        photoFile = null;
+        try {
+            photoFile = createImageFile();
 
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+        String authorities = getApplicationContext().getPackageName() + ".fileprovider";
+        Uri imageUri = FileProvider.getUriForFile(this, authorities, photoFile);
+        callCameraApplicationIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+
+        startActivityForResult(callCameraApplicationIntent, ACTIVITY_START_CAMERA_APP);
+    }
+    private File createImageFile() throws IOException {
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "IMAGE_" + timeStamp + "_";
+        File storageDirectory = getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+
+        return File.createTempFile(imageFileName, ".jpg", storageDirectory);
+
+    }
+    private void checkCameraPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String writeExtStorPermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+            String cameraPermission = Manifest.permission.CAMERA;
+            if (ContextCompat.checkSelfPermission(this, cameraPermission) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(this, writeExtStorPermission) == PackageManager.PERMISSION_GRANTED) {
+                takePhoto();
+            }else {
+                if (shouldShowRequestPermissionRationale(cameraPermission)) {
+                    Toast.makeText(this, "App need camera permission", Toast.LENGTH_SHORT).show();
+                }
+                requestPermissions(new String[]{cameraPermission, writeExtStorPermission}, CAMERA_PERMISSION_RESULT);
+
+            }
+        } else{
+            takePhoto();
+        }
+    }
     private void checkReadExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String readExternalStoragePermission = Manifest.permission.READ_EXTERNAL_STORAGE;
-            if (ContextCompat.checkSelfPermission(this, readExternalStoragePermission) ==
+            String readExtStorPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
+            if (ContextCompat.checkSelfPermission(this, readExtStorPermission) ==
                     PackageManager.PERMISSION_GRANTED) {
                 //start cursor loader
                 getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
 
             } else {
-                if (shouldShowRequestPermissionRationale(readExternalStoragePermission)) {
+                if (shouldShowRequestPermissionRationale(readExtStorPermission)) {
                     Toast.makeText(this, "App need read external storage permission", Toast.LENGTH_SHORT).show();
                 }
-                requestPermissions(new String[]{readExternalStoragePermission}, READ_EXTERNAL_STORAGE_RESULT);
+                requestPermissions(new String[]{readExtStorPermission}, READ_EXTERNAL_STORAGE_RESULT);
            }
         } else {
             //start cursor loader
