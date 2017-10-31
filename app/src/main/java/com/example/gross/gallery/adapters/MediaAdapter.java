@@ -3,9 +3,6 @@ package com.example.gross.gallery.adapters;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,12 +10,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.example.gross.gallery.R;
-import com.example.gross.gallery.model.ImageDataObject;
+import com.example.gross.gallery.model.ImageData;
 import com.example.gross.gallery.ui.DetailActivity;
 import com.squareup.picasso.Picasso;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.example.gross.gallery.Consts.CURRENT_POSITION;
 import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
@@ -26,21 +20,17 @@ import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
 
 public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
 
-    private Cursor mediaCursor;
     private final Activity activity;
-    public static List<ImageDataObject> imageDataList = new ArrayList<>();
-
 
     public MediaAdapter(Activity activity) {
         this.activity = activity;
-
     }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_media, parent, false);
-        getUriListFromMediaStore();
+
         return new ViewHolder(view);
     }
 
@@ -48,7 +38,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     public void onBindViewHolder(ViewHolder holder, int position) {
         final int pos = position;
         Picasso.with(activity)
-                .load(imageDataList.get(position).getUri())
+                .load(ImageData.imageDataList.get(position).getUri())
                 .resize(200, 200)
                 .into(holder.mediaImageView);
 
@@ -67,7 +57,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        return (mediaCursor == null) ? 0 : mediaCursor.getCount();
+        return ImageData.imageDataList.size();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder{
@@ -76,49 +66,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
         ViewHolder(View itemView) {
             super(itemView);
-
             mediaImageView = itemView.findViewById(R.id.mediaImageView);
         }
-
     }
-
-    private Cursor swapCursor(Cursor cursor){
-        if (mediaCursor == cursor){
-            return null;
-        }
-        Cursor oldCursor = mediaCursor;
-        this.mediaCursor = cursor;
-        if (cursor != null){
-            this.notifyDataSetChanged();
-        }
-        return oldCursor;
-    }
-
-    public void changeCursor(Cursor cursor){
-        Cursor oldCursor = swapCursor(cursor);
-        if (oldCursor != null){
-            oldCursor.close();
-        }
-    }
-
-    private void getUriListFromMediaStore(){
-        int titleIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.TITLE);
-        int widthIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.WIDTH);
-        int heightIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.HEIGHT);
-        int thumbIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.MINI_THUMB_MAGIC);
-
-        int dataIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
-
-        mediaCursor.moveToPosition(0);
-        while (mediaCursor.moveToNext()){
-            String title = mediaCursor.getString(titleIndex);
-            int width = Integer.parseInt(mediaCursor.getString(widthIndex));
-            int height = Integer.parseInt(mediaCursor.getString(heightIndex));
-            Uri thumb = Uri.parse("file://" + mediaCursor.getString(thumbIndex));
-            Uri uri = Uri.parse("file://" + mediaCursor.getString(dataIndex));
-            imageDataList.add(new ImageDataObject(title, width, height,thumb, uri));
-        }
-
-    }
-
 }

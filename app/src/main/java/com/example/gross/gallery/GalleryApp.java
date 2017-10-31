@@ -13,5 +13,7 @@ public class GalleryApp extends Application {
         super.onCreate();
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this).build();
         ImageLoader.getInstance().init(config);
+
+        
     }
 }

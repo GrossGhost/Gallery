@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
+import com.example.gross.gallery.model.ImageData;
 import com.example.gross.gallery.ui.DetailFragment;
 
 
@@ -25,6 +26,7 @@ public class SwipeAdapter extends FragmentStatePagerAdapter {
     @Override
     public int getCount() {
 
-        return MediaAdapter.imageDataList.size();
+        return ImageData.imageDataList.size();
     }
+
 }

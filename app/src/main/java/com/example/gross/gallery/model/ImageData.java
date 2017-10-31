@@ -1,21 +1,24 @@
 package com.example.gross.gallery.model;
 
-
 import android.net.Uri;
 
-public class ImageDataObject {
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class ImageData {
+
+    public static List<ImageData> imageDataList = new ArrayList<>();
 
     private String title;
     private int width;
     private int height;
-    private Uri thumb;
     private Uri uri;
 
-    public ImageDataObject(String title, int width, int height, Uri thumb, Uri uri){
+    public ImageData(String title, int width, int height, Uri uri){
         this.title = title;
         this.width = width;
         this.height = height;
-        this.thumb = thumb;
         this.uri = uri;
     }
 
@@ -31,9 +34,6 @@ public class ImageDataObject {
         return height;
     }
 
-    public Uri getThumb() {
-        return thumb;
-    }
     public Uri getUri() {
         return uri;
     }

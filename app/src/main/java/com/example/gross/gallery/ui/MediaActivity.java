@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -16,11 +17,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 
 import com.example.gross.gallery.R;
 import com.example.gross.gallery.adapters.MediaAdapter;
+import com.example.gross.gallery.model.ImageData;
 
 import static com.example.gross.gallery.Consts.CURRENT_POSITION;
 import static com.example.gross.gallery.Consts.MEDIA_LOADER_ID;
@@ -31,6 +36,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
     private RecyclerView thumbRecyclerView;
     private MediaAdapter mediaAdapter;
+    private Cursor mediaCursor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +44,6 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         setContentView(R.layout.activity_main);
 
         thumbRecyclerView = (RecyclerView) findViewById(R.id.thumbRecyclerView);
-        thumbRecyclerView.setHasFixedSize(true);
         GridLayoutManager gridLayoutManager;
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             gridLayoutManager = new GridLayoutManager(this, 2);
@@ -47,12 +52,38 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         }
 
         thumbRecyclerView.setLayoutManager(gridLayoutManager);
-        mediaAdapter = new MediaAdapter(this);
-        thumbRecyclerView.setAdapter(mediaAdapter);
-
 
         checkReadExternalStoragePermission();
+    }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.activity_main, menu);
+        MenuItem item = menu.findItem(R.id.menuSearch);
+        SearchView searchView = (SearchView) item.getActionView();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Toast.makeText(getApplicationContext(), query, Toast.LENGTH_SHORT).show();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.menuCamera){
+            Toast.makeText(getApplicationContext(), "Camera", Toast.LENGTH_SHORT).show();
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -73,6 +104,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // call cursor adapter
                     getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
+
                 }
                 break;
             default:
@@ -87,6 +119,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                     PackageManager.PERMISSION_GRANTED) {
                 //start cursor loader
                 getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
+
             } else {
                 if (shouldShowRequestPermissionRationale(readExternalStoragePermission)) {
                     Toast.makeText(this, "App need read external storage permission", Toast.LENGTH_SHORT).show();
@@ -97,8 +130,6 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
             //start cursor loader
             getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
         }
-
-
     }
 
     @Override
@@ -107,7 +138,6 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                 MediaStore.Images.ImageColumns.TITLE,
                 MediaStore.Images.ImageColumns.WIDTH,
                 MediaStore.Images.ImageColumns.HEIGHT,
-                MediaStore.Images.ImageColumns.MINI_THUMB_MAGIC,
                 MediaStore.Images.ImageColumns.DATA };
         String selection = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
@@ -117,11 +147,49 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        mediaAdapter.changeCursor(data);
+        changeCursor(data);
+        writeData();
+    }
+
+    private void writeData() {
+        int titleIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.TITLE);
+        int widthIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.WIDTH);
+        int heightIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.HEIGHT);
+        int dataIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+
+        mediaCursor.moveToPosition(-1);
+        ImageData.imageDataList.clear();
+        while (mediaCursor.moveToNext()){
+            String title = mediaCursor.getString(titleIndex);
+            int width = Integer.parseInt(mediaCursor.getString(widthIndex));
+            int height = Integer.parseInt(mediaCursor.getString(heightIndex));
+
+            Uri uri = Uri.parse("file://" + mediaCursor.getString(dataIndex));
+            ImageData.imageDataList.add(new ImageData(title, width, height, uri));
+        }
+        mediaAdapter = new MediaAdapter(this);
+        thumbRecyclerView.setAdapter(mediaAdapter);
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        mediaAdapter.changeCursor(null);
+        changeCursor(null);
+    }
+
+    private Cursor swapCursor(Cursor cursor){
+        if (mediaCursor == cursor){
+            return null;
+        }
+        Cursor oldCursor = mediaCursor;
+        this.mediaCursor = cursor;
+
+        return oldCursor;
+    }
+
+    private void changeCursor(Cursor cursor){
+        Cursor oldCursor = swapCursor(cursor);
+        if (oldCursor != null){
+            oldCursor.close();
+        }
     }
 }
