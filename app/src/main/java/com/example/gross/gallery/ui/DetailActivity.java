@@ -1,7 +1,11 @@
 package com.example.gross.gallery.ui;
 
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -15,12 +19,14 @@ import com.example.gross.gallery.ZoomOutPageTransformer;
 import com.example.gross.gallery.adapters.SwipeAdapter;
 import com.example.gross.gallery.model.ImageData;
 
+import java.io.File;
+
 import static com.example.gross.gallery.Consts.CURRENT_POSITION;
 
 public class DetailActivity extends AppCompatActivity {
 
     private ViewPager viewPager;
-    private boolean isToolbarVisible = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,16 +34,13 @@ public class DetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_detail);
 
         int itemPosition = getIntent().getIntExtra(CURRENT_POSITION, 0);
-        final int imageCount = ImageData.imageDataList.size();
 
         viewPager = (ViewPager) findViewById(R.id.viewPagerDetail);
-        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_detail);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_detail);
 
         setSupportActionBar(toolbar);
 
-        SwipeAdapter swipeAdapter = new SwipeAdapter(getSupportFragmentManager());
-
-        viewPager.setAdapter(swipeAdapter);
+        viewPager.setAdapter(new SwipeAdapter(getSupportFragmentManager()));
         viewPager.setCurrentItem(itemPosition);
         viewPager.setPageTransformer(true, new ZoomOutPageTransformer());
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -47,7 +50,7 @@ public class DetailActivity extends AppCompatActivity {
                 if (bar != null) {
                     bar.setShowHideAnimationEnabled(true);
                     bar.setTitle(ImageData.imageDataList.get(position).getTitle());
-                    bar.setSubtitle(position + "/" + imageCount);
+                    bar.setSubtitle(position + "/" + ImageData.imageDataList.size());
                 }
             }
 
@@ -78,10 +81,34 @@ public class DetailActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menuDetailDelete){
             Toast.makeText(getApplicationContext(), "DetailDelete", Toast.LENGTH_SHORT).show();
+            int position = viewPager.getCurrentItem();
+            File toDeletefile = new File(ImageData.imageDataList.get(position).getUri().getPath());
+            if (delete(this, toDeletefile)) {
+                ImageData.imageDataList.remove(position);
+
+                viewPager.setAdapter(new SwipeAdapter(getSupportFragmentManager()));
+                viewPager.setCurrentItem(position);
+            }
         }
         if (item.getItemId() == R.id.menuDetailSave){
             Toast.makeText(getApplicationContext(), "DetailSave", Toast.LENGTH_SHORT).show();
         }
         return super.onOptionsItemSelected(item);
+    }
+    public static boolean delete(final Context context, final File file) {
+        final String where = MediaStore.MediaColumns.DATA + "=?";
+        final String[] selectionArgs = new String[] {
+                file.getAbsolutePath()
+        };
+        final ContentResolver contentResolver = context.getContentResolver();
+        final Uri filesUri = MediaStore.Files.getContentUri("external");
+
+        contentResolver.delete(filesUri, where, selectionArgs);
+
+        if (file.exists()) {
+
+            contentResolver.delete(filesUri, where, selectionArgs);
+        }
+        return !file.exists();
     }
 }
