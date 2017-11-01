@@ -45,9 +45,9 @@ import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
 public class MediaActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private RecyclerView thumbRecyclerView;
-    private MediaAdapter mediaAdapter;
     private Cursor mediaCursor;
     private File photoFile;
+    private int lastImageDetailViewed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +104,8 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
                 case REQUEST_CODE_CURRENT_POSITION:
-                    thumbRecyclerView.scrollToPosition(data.getIntExtra(CURRENT_POSITION, 0));
+                    lastImageDetailViewed = data.getIntExtra(CURRENT_POSITION, 0);
+                    thumbRecyclerView.scrollToPosition(lastImageDetailViewed);
                     break;
                 case ACTIVITY_START_CAMERA_APP :
                     //add photo to the Media Provider's database
@@ -218,6 +219,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         changeCursor(data);
         writeData();
+        thumbRecyclerView.scrollToPosition(lastImageDetailViewed);
     }
 
     private void writeData() {
@@ -236,7 +238,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
             Uri uri = Uri.parse("file://" + mediaCursor.getString(dataIndex));
             ImageData.imageDataList.add(new ImageData(title, width, height, uri));
         }
-        mediaAdapter = new MediaAdapter(this);
+        MediaAdapter mediaAdapter = new MediaAdapter(this);
         thumbRecyclerView.setAdapter(mediaAdapter);
     }
 

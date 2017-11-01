@@ -2,12 +2,14 @@ package com.example.gross.gallery.ui;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -80,15 +82,33 @@ public class DetailActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menuDetailDelete){
-            Toast.makeText(getApplicationContext(), "DetailDelete", Toast.LENGTH_SHORT).show();
-            int position = viewPager.getCurrentItem();
-            File toDeletefile = new File(ImageData.imageDataList.get(position).getUri().getPath());
-            if (delete(this, toDeletefile)) {
-                ImageData.imageDataList.remove(position);
 
-                viewPager.setAdapter(new SwipeAdapter(getSupportFragmentManager()));
-                viewPager.setCurrentItem(position);
-            }
+            AlertDialog.Builder ad = new AlertDialog.Builder(this);
+            ad.setTitle("Delete an image");
+            ad.setMessage("Are you sure wanna delete selected image?");
+            ad.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int arg1) {
+                    //delete image
+                    int position = viewPager.getCurrentItem();
+                    File toDeleteFile = new File(ImageData.imageDataList.get(position).getUri().getPath());
+                    if (delete(getApplicationContext(), toDeleteFile)) {
+                        ImageData.imageDataList.remove(position);
+                        viewPager.setAdapter(new SwipeAdapter(getSupportFragmentManager()));
+                        int countImages = ImageData.imageDataList.size();
+                        if (countImages < position)
+                            viewPager.setCurrentItem(position - 1);
+                        else
+                            viewPager.setCurrentItem(position);
+                    }
+                }
+            });
+            ad.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int arg1) {
+
+                }
+            });
+            ad.setCancelable(true);
+            ad.show();
         }
         if (item.getItemId() == R.id.menuDetailSave){
             Toast.makeText(getApplicationContext(), "DetailSave", Toast.LENGTH_SHORT).show();
