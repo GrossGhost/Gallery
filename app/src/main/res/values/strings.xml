@@ -3,4 +3,5 @@
     <string name="content">Content</string>
     <string name="search_on_pixabay_com">Search on pixabay.com</string>
     <string name="camera">Camera</string>
+    <string name="back_to_gallery">Back to gallery</string>
 </resources>

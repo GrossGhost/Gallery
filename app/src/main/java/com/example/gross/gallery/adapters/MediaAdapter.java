@@ -42,25 +42,21 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
                 .resize(200, 200)
                 .into(holder.mediaImageView);
 
-        holder.mediaImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent startDetailActivityIntent = new Intent(activity, DetailActivity.class);
-                startDetailActivityIntent.putExtra(CURRENT_POSITION, pos);
+        holder.mediaImageView.setOnClickListener(view -> {
+            Intent startDetailActivityIntent = new Intent(activity, DetailActivity.class);
+            startDetailActivityIntent.putExtra(CURRENT_POSITION, pos);
 
-                activity.startActivityForResult(startDetailActivityIntent, REQUEST_CODE_CURRENT_POSITION);
-                activity.overridePendingTransition(R.anim.right_in, R.anim.left_out);
-            }
+            activity.startActivityForResult(startDetailActivityIntent, REQUEST_CODE_CURRENT_POSITION);
+            activity.overridePendingTransition(R.anim.right_in, R.anim.left_out);
         });
     }
-
 
     @Override
     public int getItemCount() {
         return ImageData.imageDataList.size();
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder{
+    static class ViewHolder extends RecyclerView.ViewHolder {
 
         ImageView mediaImageView;
 

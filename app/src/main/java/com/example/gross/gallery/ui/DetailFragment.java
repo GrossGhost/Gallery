@@ -52,7 +52,7 @@ public class DetailFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
-        ActionBar bar = ((AppCompatActivity)getActivity()).getSupportActionBar();
+        ActionBar bar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         if (bar != null) {
             if (bar.isShowing())
                 bar.hide();

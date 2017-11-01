@@ -6,11 +6,16 @@
         android:icon="@android:drawable/ic_menu_search"
         android:title="@string/search_on_pixabay_com"
         app:actionViewClass="android.support.v7.widget.SearchView"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/menuCamera"
         android:icon="@android:drawable/ic_menu_camera"
         android:title="@string/camera"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menuBackToGallery"
+        android:title="@string/back_to_gallery"
+        app:showAsAction="never" />
 </menu>

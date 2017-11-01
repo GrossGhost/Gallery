@@ -4,8 +4,8 @@
     android:id="@+id/media_card_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    card_view:cardUseCompatPadding="true"
-    card_view:cardCornerRadius="10dp" >
+    card_view:cardCornerRadius="10dp"
+    card_view:cardUseCompatPadding="true">
 
     <com.makeramen.roundedimageview.RoundedImageView
         android:id="@+id/mediaImageView"

@@ -1,7 +1,5 @@
 package com.example.gross.gallery.model;
 
-import android.net.Uri;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,16 +7,13 @@ import java.util.List;
 public class ImageData {
 
     public static List<ImageData> imageDataList = new ArrayList<>();
+    public static boolean isDataFromGallery = true;
 
     private String title;
-    private int width;
-    private int height;
-    private Uri uri;
+    private String uri;
 
-    public ImageData(String title, int width, int height, Uri uri){
+    public ImageData(String title, String uri) {
         this.title = title;
-        this.width = width;
-        this.height = height;
         this.uri = uri;
     }
 
@@ -26,15 +21,7 @@ public class ImageData {
         return title;
     }
 
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeith() {
-        return height;
-    }
-
-    public Uri getUri() {
+    public String getUri() {
         return uri;
     }
 }

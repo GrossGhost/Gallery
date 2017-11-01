@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
@@ -20,6 +21,7 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -28,17 +30,27 @@ import android.widget.Toast;
 import com.example.gross.gallery.R;
 import com.example.gross.gallery.adapters.MediaAdapter;
 import com.example.gross.gallery.model.ImageData;
+import com.example.gross.gallery.model.PixabayResponse;
+import com.example.gross.gallery.network.RestManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 import static android.os.Environment.getExternalStoragePublicDirectory;
 import static com.example.gross.gallery.Consts.ACTIVITY_START_CAMERA_APP;
 import static com.example.gross.gallery.Consts.CAMERA_PERMISSION_RESULT;
 import static com.example.gross.gallery.Consts.CURRENT_POSITION;
 import static com.example.gross.gallery.Consts.MEDIA_LOADER_ID;
+import static com.example.gross.gallery.Consts.PUXABAY_API_KEY;
 import static com.example.gross.gallery.Consts.READ_EXTERNAL_STORAGE_RESULT;
 import static com.example.gross.gallery.Consts.REQUEST_CODE_CURRENT_POSITION;
 
@@ -48,6 +60,8 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     private Cursor mediaCursor;
     private File photoFile;
     private int lastImageDetailViewed;
+    private MediaAdapter mediaAdapter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +77,8 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         }
 
         thumbRecyclerView.setLayoutManager(gridLayoutManager);
-
+        mediaAdapter = new MediaAdapter(this);
+        thumbRecyclerView.setAdapter(mediaAdapter);
         checkReadExternalStoragePermission();
     }
 
@@ -71,12 +86,20 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     public boolean onCreateOptionsMenu(Menu menu) {
 
         getMenuInflater().inflate(R.menu.activity_main, menu);
+
         MenuItem item = menu.findItem(R.id.menuSearch);
         SearchView searchView = (SearchView) item.getActionView();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                Toast.makeText(getApplicationContext(), query, Toast.LENGTH_SHORT).show();
+
+                try {
+                    query = URLEncoder.encode(query, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                getImagesFromPixabay(query);
+
                 return false;
             }
 
@@ -88,13 +111,43 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         return super.onCreateOptionsMenu(menu);
     }
 
+    public void getImagesFromPixabay(String query) {
+        Observable<PixabayResponse> observable = RestManager.getApiService().getPixabay(PUXABAY_API_KEY, query, 100);
+        observable.subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(pixabayResponse -> {
+                    List<PixabayResponse.Hit> list = pixabayResponse.getHits();
+                    if (list.size() > 0) {
+                        ImageData.imageDataList.clear();
+                        ImageData.isDataFromGallery = false;
+                        for (PixabayResponse.Hit hit : list) {
+
+                            String title = hit.getTitle();
+                            String url = hit.getWebformatURL();
+                            ImageData.imageDataList.add(new ImageData(title, url));
+
+                            Log.d("RESPONSE", hit.getTitle());
+                        }
+
+                        mediaAdapter = new MediaAdapter(this);
+                        thumbRecyclerView.setAdapter(mediaAdapter);
+                    } else {
+                        Toast.makeText(this, "Images not found", Toast.LENGTH_SHORT).show();
+                    }
+
+                }, throwable -> Toast.makeText(this, "Response errror", Toast.LENGTH_SHORT).show());
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.menuCamera){
-            Toast.makeText(getApplicationContext(), "Camera", Toast.LENGTH_SHORT).show();
+        if (item.getItemId() == R.id.menuCamera) {
+            lastImageDetailViewed = 0;
             checkCameraPermission();
         }
-
+        if (item.getItemId() == R.id.menuBackToGallery) {
+            getSupportLoaderManager().restartLoader(MEDIA_LOADER_ID, null, this);
+            ImageData.isDataFromGallery = true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -107,13 +160,15 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                     lastImageDetailViewed = data.getIntExtra(CURRENT_POSITION, 0);
                     thumbRecyclerView.scrollToPosition(lastImageDetailViewed);
                     break;
-                case ACTIVITY_START_CAMERA_APP :
+                case ACTIVITY_START_CAMERA_APP:
                     //add photo to the Media Provider's database
                     Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                     Uri contentUri = Uri.fromFile(photoFile);
                     mediaScanIntent.setData(contentUri);
                     this.sendBroadcast(mediaScanIntent);
+
                     getSupportLoaderManager().restartLoader(MEDIA_LOADER_ID, null, this);
+
                     break;
             }
         }
@@ -138,6 +193,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+
     private void takePhoto() {
         Intent callCameraApplicationIntent = new Intent();
         callCameraApplicationIntent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -155,6 +211,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
 
         startActivityForResult(callCameraApplicationIntent, ACTIVITY_START_CAMERA_APP);
     }
+
     private File createImageFile() throws IOException {
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -164,24 +221,26 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         return File.createTempFile(imageFileName, ".jpg", storageDirectory);
 
     }
-    private void checkCameraPermission(){
+
+    private void checkCameraPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             String writeExtStorPermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
             String cameraPermission = Manifest.permission.CAMERA;
             if (ContextCompat.checkSelfPermission(this, cameraPermission) == PackageManager.PERMISSION_GRANTED &&
                     ContextCompat.checkSelfPermission(this, writeExtStorPermission) == PackageManager.PERMISSION_GRANTED) {
                 takePhoto();
-            }else {
+            } else {
                 if (shouldShowRequestPermissionRationale(cameraPermission)) {
                     Toast.makeText(this, "App need camera permission", Toast.LENGTH_SHORT).show();
                 }
-                requestPermissions(new String[]{cameraPermission, writeExtStorPermission}, CAMERA_PERMISSION_RESULT);
+                ActivityCompat.requestPermissions(this, new String[]{cameraPermission, writeExtStorPermission}, CAMERA_PERMISSION_RESULT);
 
             }
-        } else{
+        } else {
             takePhoto();
         }
     }
+
     private void checkReadExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             String readExtStorPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
@@ -194,8 +253,8 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
                 if (shouldShowRequestPermissionRationale(readExtStorPermission)) {
                     Toast.makeText(this, "App need read external storage permission", Toast.LENGTH_SHORT).show();
                 }
-                requestPermissions(new String[]{readExtStorPermission}, READ_EXTERNAL_STORAGE_RESULT);
-           }
+                ActivityCompat.requestPermissions(this, new String[]{readExtStorPermission}, READ_EXTERNAL_STORAGE_RESULT);
+            }
         } else {
             //start cursor loader
             getSupportLoaderManager().initLoader(MEDIA_LOADER_ID, null, this);
@@ -206,9 +265,7 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         String[] projection = {
                 MediaStore.Images.ImageColumns.TITLE,
-                MediaStore.Images.ImageColumns.WIDTH,
-                MediaStore.Images.ImageColumns.HEIGHT,
-                MediaStore.Images.ImageColumns.DATA };
+                MediaStore.Images.ImageColumns.DATA};
         String selection = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
         return new CursorLoader(this, MediaStore.Files.getContentUri("external"),
@@ -218,27 +275,26 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         changeCursor(data);
-        writeData();
-        thumbRecyclerView.scrollToPosition(lastImageDetailViewed);
+        if (ImageData.isDataFromGallery) {
+            writeData();
+            thumbRecyclerView.scrollToPosition(lastImageDetailViewed);
+        }
+
     }
 
     private void writeData() {
         int titleIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.TITLE);
-        int widthIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.WIDTH);
-        int heightIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.HEIGHT);
         int dataIndex = mediaCursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
 
         mediaCursor.moveToPosition(-1);
         ImageData.imageDataList.clear();
-        while (mediaCursor.moveToNext()){
+        ImageData.isDataFromGallery = true;
+        while (mediaCursor.moveToNext()) {
             String title = mediaCursor.getString(titleIndex);
-            int width = Integer.parseInt(mediaCursor.getString(widthIndex));
-            int height = Integer.parseInt(mediaCursor.getString(heightIndex));
-
-            Uri uri = Uri.parse("file://" + mediaCursor.getString(dataIndex));
-            ImageData.imageDataList.add(new ImageData(title, width, height, uri));
+            String uri = "file://" + mediaCursor.getString(dataIndex);
+            ImageData.imageDataList.add(new ImageData(title, uri));
         }
-        MediaAdapter mediaAdapter = new MediaAdapter(this);
+        mediaAdapter = new MediaAdapter(this);
         thumbRecyclerView.setAdapter(mediaAdapter);
     }
 
@@ -247,8 +303,8 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         changeCursor(null);
     }
 
-    private Cursor swapCursor(Cursor cursor){
-        if (mediaCursor == cursor){
+    private Cursor swapCursor(Cursor cursor) {
+        if (mediaCursor == cursor) {
             return null;
         }
         Cursor oldCursor = mediaCursor;
@@ -257,9 +313,9 @@ public class MediaActivity extends AppCompatActivity implements LoaderManager.Lo
         return oldCursor;
     }
 
-    private void changeCursor(Cursor cursor){
+    private void changeCursor(Cursor cursor) {
         Cursor oldCursor = swapCursor(cursor);
-        if (oldCursor != null){
+        if (oldCursor != null) {
             oldCursor.close();
         }
     }
